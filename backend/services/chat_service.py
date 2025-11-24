@@ -1,6 +1,7 @@
 import google.generativeai as genai
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from models import Thread, Message
 from database import SessionLocal
 from typing import List, Optional
@@ -88,3 +89,33 @@ class ChatService:
             return history
         finally:
             db.close()
+
+    @staticmethod
+    def get_all_threads(db: Session):
+        # Get latest message per thread to use as title
+        subquery = (
+            db.query(
+                Message.thread_id,
+                func.max(Message.created_at).label("last_msg_time")
+            )
+            .group_by(Message.thread_id)
+            .subquery()
+        )
+
+        threads = (
+            db.query(
+                Message.thread_id,
+                Message.text.label("title"),
+                Message.created_at
+            )
+            .join(
+                subquery,
+                (Message.thread_id == subquery.c.thread_id) &
+                (Message.created_at == subquery.c.last_msg_time)
+            )
+            .order_by(subquery.c.last_msg_time.desc())
+            .all()
+        )
+
+        # Return list of dicts with id and title
+        return [{"id": t.thread_id, "title": t.title} for t in threads]

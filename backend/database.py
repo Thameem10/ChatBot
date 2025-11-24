@@ -11,6 +11,13 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 engine = create_engine(DATABASE_URL)
 
+def get_db():
+    db: Session = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 try:
     with engine.connect() as conn:
         conn.execute(text("SELECT 1"))

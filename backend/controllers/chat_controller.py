@@ -1,8 +1,9 @@
-from fastapi import HTTPException , Query
+from fastapi import HTTPException , Query  , Depends
+from sqlalchemy.orm import Session
 from schemas.chat_schema import ChatRequest
 from services.chat_service import ChatService
 from typing import Optional
-
+from database import get_db
 
 class ChatController:
     @staticmethod
@@ -21,3 +22,11 @@ class ChatController:
         except Exception as e:
             print("Error:", str(e))
             raise HTTPException(status_code=500, detail=str(e))
+    
+    @staticmethod
+    def fetch_threads(db: Session = Depends(get_db)):
+        try:
+            return ChatService.get_all_threads(db)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
