@@ -77,30 +77,46 @@ export async function requestWithAuth<T>(
   method: "POST" | "PUT" | "DELETE",
   body: any
 ): Promise<T | null> {
-  const token = localStorage.getItem("accessToken");
+  let token = localStorage.getItem("accessToken");
 
-  try {
-    const res = await fetch(url, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify(body)
-    });
+  let res = await fetch(url, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(body)
+  });
 
-    const data = await res.json();
+  // If access token expired → refresh
+  if (res.status === 401) {
+    console.log("Access token expired → refreshing...");
 
-    if (!res.ok) {
-      console.error("API Error:", data.message);
+    const newToken = await refreshAccessToken();
+    if (!newToken) {
+      console.log("Refresh failed → redirect login");
       return null;
     }
 
-    return data as T;
-  } catch (err) {
-    console.error("Network error:", err);
+    // retry request with new token
+    res = await fetch(url, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${newToken}`
+      },
+      body: JSON.stringify(body)
+    });
+  }
+
+  // Handle errors again after retry
+  if (!res.ok) {
+    const errorData = await res.json();
+    console.error("API Error:", errorData.message);
     return null;
   }
+
+  return (await res.json()) as T;
 }
 
 export async function createWithAuth<T>(url: string, body: any) {

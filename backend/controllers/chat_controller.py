@@ -1,14 +1,14 @@
 from fastapi import HTTPException
 from schemas.chat_schema import ChatRequest
 from services.chat_service import ChatService
+from fastapi.responses import StreamingResponse
 
 class ChatController:
     @staticmethod
-    async def process_message(data: ChatRequest):
+    async def process_stream(data: ChatRequest):
         try:
-            reply = await ChatService.generate_response(data.message, data.thread_id)
-            return {"reply": reply}
+            # Return streaming response directly
+            return await ChatService.generate_stream(data.message, data.thread_id)
 
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
-

@@ -29,35 +29,46 @@ export default function ChatPage() {
   useEffect(() => {
     localStorage.setItem("thread_id", threadId);
   }, []);
+  const botIndexRef = useRef<number>(-1);
 
   const handleSend = async () => {
     if (!input.trim()) return;
 
     const userMessage = { sender: "user", text: input };
     setMessages((prev: any) => [...prev, userMessage]);
+
     setInput("");
     setTyping(true);
+
+    setMessages((prev: any) => {
+      botIndexRef.current = prev.length;
+      return [...prev, { sender: "bot", text: "" }];
+    });
 
     try {
       const res = await fetch(`${API_URL}/chat/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: input,
-          thread_id: threadId
-        })
+        body: JSON.stringify({ message: input, thread_id: threadId })
       });
 
-      const data = await res.json();
-      setMessages((prev: any) => [
-        ...prev,
-        { sender: "bot", text: data.reply }
-      ]);
-    } catch (error) {
-      setMessages((prev: any) => [
-        ...prev,
-        { sender: "bot", text: "Server error" }
-      ]);
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+
+        setMessages((prev: any) => {
+          const updated = [...prev];
+          updated[botIndexRef.current].text += chunk;
+          return updated;
+        });
+      }
+    } catch (err) {
+      console.error(err);
     }
 
     setTyping(false);
