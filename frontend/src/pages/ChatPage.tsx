@@ -2,45 +2,66 @@ import { useState, useEffect, useRef } from "react";
 import { Send } from "lucide-react";
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState(() => {
-    const saved = localStorage.getItem("chat_messages");
-    return saved
-      ? JSON.parse(saved)
-      : [{ sender: "bot", text: "Hi! How can I help you today?" }];
-  });
-
+  const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const API_URL = import.meta.env.VITE_API_URL;
 
-  // Auto scroll bottom
+  const threadId = localStorage.getItem("thread_id") || crypto.randomUUID();
+
+  // Save new threadId if newly created
+  useEffect(() => {
+    localStorage.setItem("thread_id", threadId);
+  }, []);
+
+  // Fetch chat history on load
+  useEffect(() => {
+    const loadHistory = async () => {
+      const local = localStorage.getItem("chat_messages");
+
+      try {
+        const res = await fetch(`${API_URL}/chat/history/${threadId}`);
+        if (!res.ok) throw new Error("Backend error");
+
+        const data = await res.json();
+        setMessages(data);
+        localStorage.setItem("chat_messages", JSON.stringify(data));
+      } catch (err) {
+        console.warn("Using local fallback");
+        setMessages(
+          local
+            ? JSON.parse(local)
+            : [{ sender: "bot", text: "Hi! How can I help you today?" }]
+        );
+      }
+    };
+
+    loadHistory();
+  }, [threadId]);
+
+  // Auto scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typing]);
 
-  // Save messages whenever updated
+  // Save to localStorage when messages change
   useEffect(() => {
     localStorage.setItem("chat_messages", JSON.stringify(messages));
   }, [messages]);
 
-  const threadId = localStorage.getItem("thread_id") || crypto.randomUUID();
-
-  useEffect(() => {
-    localStorage.setItem("thread_id", threadId);
-  }, []);
   const botIndexRef = useRef<number>(-1);
 
   const handleSend = async () => {
     if (!input.trim()) return;
 
     const userMessage = { sender: "user", text: input };
-    setMessages((prev: any) => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
 
     setInput("");
     setTyping(true);
 
-    setMessages((prev: any) => {
+    setMessages((prev) => {
       botIndexRef.current = prev.length;
       return [...prev, { sender: "bot", text: "" }];
     });
@@ -49,7 +70,10 @@ export default function ChatPage() {
       const res = await fetch(`${API_URL}/chat/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input, thread_id: threadId })
+        body: JSON.stringify({
+          message: input,
+          thread_id: threadId
+        })
       });
 
       const reader = res.body!.getReader();
@@ -61,7 +85,7 @@ export default function ChatPage() {
 
         const chunk = decoder.decode(value);
 
-        setMessages((prev: any) => {
+        setMessages((prev) => {
           const updated = [...prev];
           updated[botIndexRef.current].text += chunk;
           return updated;
@@ -81,9 +105,9 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-[90vh] bg-white ">
-      {/* Header */}
-      <div className="px-6 py-4  bg-amber-50 flex justify-between items-center gap-3">
+    <div className="flex flex-col h-[90vh] bg-white">
+      {/* HEADER */}
+      <div className="px-6 py-4 bg-amber-50 flex justify-between items-center gap-3">
         <div className="flex gap-3">
           <div className="w-10 h-10 bg-amber-200 rounded-full flex items-center justify-center font-bold">
             🤖
@@ -95,19 +119,17 @@ export default function ChatPage() {
             <p className="text-sm text-gray-600">Ask anything...</p>
           </div>
         </div>
-        <div>
-          <button
-            className="border border-solid border-black text-amber-900 text-lg font-semibold p-2 rounded-xl"
-            onClick={clearChat}
-          >
-            clear chat
-          </button>
-        </div>
+        <button
+          className="border border-black p-2 rounded-xl"
+          onClick={clearChat}
+        >
+          Clear chat
+        </button>
       </div>
 
-      {/* Chat Area */}
+      {/* CHAT AREA */}
       <div className="flex-1 p-6 overflow-y-auto space-y-4">
-        {messages.map((msg: any, idx: any) => (
+        {messages.map((msg, idx) => (
           <div
             key={idx}
             className={`flex ${
@@ -127,29 +149,27 @@ export default function ChatPage() {
         ))}
 
         {typing && (
-          <div className="flex items-center gap-2 text-gray-500 text-sm">
-            <span className="animate-pulse">Bot is typing...</span>
+          <div className="text-sm text-gray-500 animate-pulse">
+            Bot is typing...
           </div>
         )}
 
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
-      <div className="border-t p-4 bg-white">
+      {/* INPUT */}
+      <div className="border-t p-4">
         <div className="flex items-center gap-3">
           <input
-            type="text"
-            className="flex-1 px-4 py-2 border rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+            className="flex-1 px-4 py-2 border rounded-xl"
             placeholder="Type your message…"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
           />
-
           <button
+            className="p-3 bg-amber-600 text-white rounded-xl"
             onClick={handleSend}
-            className="p-3 bg-amber-600 hover:bg-amber-700 transition rounded-xl text-white shadow"
           >
             <Send className="w-4 h-4" />
           </button>

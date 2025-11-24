@@ -1,5 +1,7 @@
-from sqlalchemy import Column, Integer, String, DateTime, func
+from sqlalchemy import Column, Integer, String, DateTime, func , ForeignKey , Text
 from database import Base
+from sqlalchemy.orm import relationship
+
 
 class ContactForm(Base):
     __tablename__ = "contact_form"
@@ -28,3 +30,24 @@ class Admin(Base):
     refreshToken = Column(String, nullable=True)
     createdAt = Column(DateTime(timezone=True), server_default=func.now())
     updatedAt = Column(DateTime(timezone=True), onupdate=func.now())
+
+class Thread(Base):
+    __tablename__ = "threads"
+
+    id = Column(String, primary_key=True, index=True)
+    user_id = Column(String, nullable=True)
+    title = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    messages = relationship("Message", backref="thread", cascade="all, delete")
+
+
+class Message(Base):
+    __tablename__ = "messages"
+
+    id = Column(String, primary_key=True, index=True)
+    thread_id = Column(String, ForeignKey("threads.id", ondelete="CASCADE"))
+    sender = Column(String)  
+    text = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+

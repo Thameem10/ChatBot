@@ -9,3 +9,7 @@ router = APIRouter(prefix="/chat", tags=["Chat"])
 async def send_message(data: ChatRequest):
     # Return streaming response from controller
     return await ChatController.process_stream(data)
+
+@router.get("/history/{thread_id}")
+async def get_chat_history(thread_id: str):
+    return await ChatController.fetch_chat_history(thread_id)   
