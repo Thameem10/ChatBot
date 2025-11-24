@@ -2,9 +2,13 @@ import { useState, useEffect, useRef } from "react";
 import { Send } from "lucide-react";
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState([
-    { sender: "bot", text: "Hi! How can I help you today? " }
-  ]);
+  const [messages, setMessages] = useState(() => {
+    const saved = localStorage.getItem("chat_messages");
+    return saved
+      ? JSON.parse(saved)
+      : [{ sender: "bot", text: "Hi! How can I help you today?" }];
+  });
+
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -15,12 +19,22 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typing]);
 
-  // Handle sending message
+  // Save messages whenever updated
+  useEffect(() => {
+    localStorage.setItem("chat_messages", JSON.stringify(messages));
+  }, [messages]);
+
+  const threadId = localStorage.getItem("thread_id") || crypto.randomUUID();
+
+  useEffect(() => {
+    localStorage.setItem("thread_id", threadId);
+  }, []);
+
   const handleSend = async () => {
     if (!input.trim()) return;
 
     const userMessage = { sender: "user", text: input };
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev: any) => [...prev, userMessage]);
     setInput("");
     setTyping(true);
 
@@ -30,36 +44,59 @@ export default function ChatPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: input,
-          thread_id: "user1"
+          thread_id: threadId
         })
       });
 
       const data = await res.json();
-
-      setMessages((prev) => [...prev, { sender: "bot", text: data.reply }]);
+      setMessages((prev: any) => [
+        ...prev,
+        { sender: "bot", text: data.reply }
+      ]);
     } catch (error) {
-      setMessages((prev) => [...prev, { sender: "bot", text: "Server error" }]);
+      setMessages((prev: any) => [
+        ...prev,
+        { sender: "bot", text: "Server error" }
+      ]);
     }
 
     setTyping(false);
   };
 
+  const clearChat = () => {
+    localStorage.removeItem("chat_messages");
+    localStorage.removeItem("thread_id");
+    setMessages([{ sender: "bot", text: "New chat started!" }]);
+  };
+
   return (
     <div className="flex flex-col h-[90vh] bg-white ">
       {/* Header */}
-      <div className="px-6 py-4  bg-amber-50 flex items-center gap-3">
-        <div className="w-10 h-10 bg-amber-200 rounded-full flex items-center justify-center font-bold">
-          🤖
+      <div className="px-6 py-4  bg-amber-50 flex justify-between items-center gap-3">
+        <div className="flex gap-3">
+          <div className="w-10 h-10 bg-amber-200 rounded-full flex items-center justify-center font-bold">
+            🤖
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-amber-900">
+              AI Assistant
+            </h2>
+            <p className="text-sm text-gray-600">Ask anything...</p>
+          </div>
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-amber-900">AI Assistant</h2>
-          <p className="text-sm text-gray-600">Ask anything...</p>
+          <button
+            className="border border-solid border-black text-amber-900 text-lg font-semibold p-2 rounded-xl"
+            onClick={clearChat}
+          >
+            clear chat
+          </button>
         </div>
       </div>
 
       {/* Chat Area */}
       <div className="flex-1 p-6 overflow-y-auto space-y-4">
-        {messages.map((msg, idx) => (
+        {messages.map((msg: any, idx: any) => (
           <div
             key={idx}
             className={`flex ${
