@@ -8,6 +8,7 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const API_URL = import.meta.env.VITE_API_URL;
 
   // Auto scroll bottom
   useEffect(() => {
@@ -21,20 +22,26 @@ export default function ChatPage() {
     const userMessage = { sender: "user", text: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
-
-    // Bot typing indicator
     setTyping(true);
 
-    // Simulated API call
-    setTimeout(() => {
-      const botReply = {
-        sender: "bot",
-        text: "This is a sample response from the chatbot. You can connect your API!"
-      };
+    try {
+      const res = await fetch(`${API_URL}/chat/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: input,
+          thread_id: "user1"
+        })
+      });
 
-      setMessages((prev) => [...prev, botReply]);
-      setTyping(false);
-    }, 1000);
+      const data = await res.json();
+
+      setMessages((prev) => [...prev, { sender: "bot", text: data.reply }]);
+    } catch (error) {
+      setMessages((prev) => [...prev, { sender: "bot", text: "Server error" }]);
+    }
+
+    setTyping(false);
   };
 
   return (
