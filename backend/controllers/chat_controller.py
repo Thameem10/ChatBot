@@ -1,6 +1,7 @@
-from fastapi import HTTPException
+from fastapi import HTTPException , Query
 from schemas.chat_schema import ChatRequest
 from services.chat_service import ChatService
+from typing import Optional
 
 
 class ChatController:
@@ -13,9 +14,10 @@ class ChatController:
             raise HTTPException(status_code=500, detail=str(e))
 
     @staticmethod
-    async def fetch_chat_history(thread_id: str):
+    async def fetch_chat_history(thread_id: str, limit: Optional[int] = Query(50, gt=0), offset: Optional[int] = Query(0, ge=0)):
+       
         try:
-            return await ChatService.get_chat_history(thread_id)
+            return await ChatService.get_chat_history(thread_id, limit=limit, offset=offset)
         except Exception as e:
             print("Error:", str(e))
             raise HTTPException(status_code=500, detail=str(e))

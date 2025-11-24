@@ -1,7 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter , Query
 from controllers.chat_controller import ChatController
 from schemas.chat_schema import ChatRequest
 from fastapi.responses import StreamingResponse
+from typing import Optional
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
 
@@ -11,5 +12,10 @@ async def send_message(data: ChatRequest):
     return await ChatController.process_stream(data)
 
 @router.get("/history/{thread_id}")
-async def get_chat_history(thread_id: str):
-    return await ChatController.fetch_chat_history(thread_id)   
+async def get_chat_history(
+    thread_id: str,
+    limit: Optional[int] = Query(50, gt=0),   # default 50 messages per page
+    offset: Optional[int] = Query(0, ge=0)    # default start from 0
+):
+   
+    return await ChatController.fetch_chat_history(thread_id, limit=limit, offset=offset)  

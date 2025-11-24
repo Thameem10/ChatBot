@@ -21,7 +21,9 @@ export default function ChatPage() {
       const local = localStorage.getItem("chat_messages");
 
       try {
-        const res = await fetch(`${API_URL}/chat/history/${threadId}`);
+        const res = await fetch(
+          `${API_URL}/chat/history/${threadId}?limit=50&offset=0`
+        );
         if (!res.ok) throw new Error("Backend error");
 
         const data = await res.json();

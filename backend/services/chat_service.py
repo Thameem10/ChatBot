@@ -3,6 +3,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from models import Thread, Message
 from database import SessionLocal
+from typing import List, Optional
 import uuid
 import os
 
@@ -72,10 +73,17 @@ class ChatService:
             db.close()
 
     @staticmethod
-    async def get_chat_history(thread_id: str):
+    async def get_chat_history(thread_id: str, limit: int = 50, offset: int = 0) -> List[dict]:
         db: Session = SessionLocal()
         try:
-            messages = db.query(Message).filter(Message.thread_id == thread_id).order_by(Message.created_at).all()
+            messages = (
+                db.query(Message)
+                .filter(Message.thread_id == thread_id)
+                .order_by(Message.created_at)
+                .offset(offset)
+                .limit(limit)
+                .all()
+            )
             history = [{"sender": m.sender, "text": m.text} for m in messages]
             return history
         finally:
