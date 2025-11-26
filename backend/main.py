@@ -4,6 +4,7 @@ from database import Base, engine
 from routes.contact_route import router as ContactRouter
 from routes.admin_routes import router as AdminRouter
 from routes.chat_route import router as ChatRouter
+from routes.file_routes import router as FileRouter
 
 import uvicorn
 
@@ -25,6 +26,7 @@ app.add_middleware(
 app.include_router(ContactRouter)
 app.include_router(AdminRouter)
 app.include_router(ChatRouter)
+app.include_router(FileRouter)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=5000, reload=True)

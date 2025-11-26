@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import ContactForm from "./pages/ContactForm";
 import ChatPage from "./pages/ChatPage";
+import FilePage from "./pages/FilePage";
 
 import Layout from "./pages/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -25,6 +26,7 @@ function App() {
           >
             <Route path="/" element={<ContactForm />} />
             <Route path="/chatbox" element={<ChatPage />} />
+            <Route path="/File" element={<FilePage />} />
           </Route>
         </Routes>
       </Router>

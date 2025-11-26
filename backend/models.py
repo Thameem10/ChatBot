@@ -51,3 +51,10 @@ class Message(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
+class ChatbotFile(Base):
+    __tablename__ = "chatbot_file"
+
+    id = Column(String, primary_key=True, index=True)  
+    filename = Column(String, nullable=False)
+    filepath = Column(String, nullable=False)
+    uploaded_at = Column(DateTime(timezone=True), server_default=func.now())

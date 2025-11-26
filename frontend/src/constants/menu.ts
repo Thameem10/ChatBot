@@ -1,4 +1,4 @@
-import { Contact, ChefHat } from "lucide-react";
+import { Contact, ChefHat, File } from "lucide-react";
 
 interface MenuItem {
   id: string;
@@ -13,6 +13,12 @@ export const MENU_ITEMS: MenuItem[] = [
     label: "Contact",
     icon: Contact,
     path: "/"
+  },
+  {
+    id: "File",
+    label: "File",
+    icon: File,
+    path: "/File"
   },
   {
     id: "Chatbox",

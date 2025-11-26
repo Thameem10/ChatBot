@@ -7,8 +7,21 @@ from database import SessionLocal
 from typing import List, Optional
 import uuid
 import os
+# Add these imports at the top of services/chat_service.py
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
+
 
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+VECTOR_STORE_PATH = "vector_store/faiss_index"
+embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+vector_store = FAISS.load_local(
+    VECTOR_STORE_PATH,
+    embeddings,
+    allow_dangerous_deserialization=True
+)
+
 
 class ChatService:
     @staticmethod
@@ -34,15 +47,22 @@ class ChatService:
             db.add(user_msg)
             db.commit()
 
-            # Build history from DB messages with valid roles for Gemini
+            # Retrieve relevant chunks from FAISS vector store
+            relevant_docs = vector_store.similarity_search(message, k=3)  # top 3 chunks
+            retrieved_text = "\n".join([doc.page_content for doc in relevant_docs])
+
+            # Build history from DB messages for Gemini
             messages = db.query(Message).filter(Message.thread_id == thread_id).order_by(Message.created_at).all()
             history = [
-                {
-                    "role": "user" if m.sender == "user" else "model",
-                    "parts": [m.text]
-                }
+                {"role": "user" if m.sender == "user" else "model", "parts": [m.text]}
                 for m in messages
             ]
+
+            # Append retrieved document context as part of user prompt
+            history.append({
+                "role": "user",
+                "parts": [f"Context:\n{retrieved_text}\n\nQuestion: {message}"]
+            })
 
             # Initialize Gemini model
             model = genai.GenerativeModel("gemini-2.0-flash")
