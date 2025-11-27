@@ -99,15 +99,21 @@ export default function ChatPage() {
       const reader = res.body!.getReader();
       const decoder = new TextDecoder();
 
+      let botText = ""; // Temporary buffer
+
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
 
         const chunk = decoder.decode(value);
+        botText += chunk;
 
         setMessages((prev) => {
           const updated = [...prev];
-          updated[botIndexRef.current].text += chunk;
+          updated[botIndexRef.current] = {
+            ...updated[botIndexRef.current],
+            text: botText
+          };
           return updated;
         });
       }
@@ -118,6 +124,14 @@ export default function ChatPage() {
     setTyping(false);
     loadThreads(); // Refresh thread list after sending
   };
+
+  function limitWords(text: any, limit = 5) {
+    if (!text) return "";
+    const words = text.split(" ");
+    return words.length > limit
+      ? words.slice(0, limit).join(" ") + "..."
+      : text;
+  }
 
   const clearChat = () => {
     localStorage.removeItem("chat_messages");
@@ -148,7 +162,8 @@ export default function ChatPage() {
             }`}
             onClick={() => thread.id && loadHistory(thread.id)}
           >
-            {thread.title ?? thread.id?.slice(0, 6) ?? "Unknown"}...
+            {limitWords(thread.title, 5) ?? thread.id?.slice(0, 6) ?? "Unknown"}
+            ...
           </div>
         ))}
       </div>

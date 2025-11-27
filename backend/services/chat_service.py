@@ -48,20 +48,42 @@ class ChatService:
             db.commit()
 
             # Retrieve relevant chunks from FAISS vector store
-            relevant_docs = vector_store.similarity_search(message, k=3)  # top 3 chunks
+            relevant_docs = vector_store.similarity_search(message, k=3)
             retrieved_text = "\n".join([doc.page_content for doc in relevant_docs])
 
-            # Build history from DB messages for Gemini
-            messages = db.query(Message).filter(Message.thread_id == thread_id).order_by(Message.created_at).all()
+            # ---------------------------
+            # STRICT RAG: No hallucination
+            # ---------------------------
             history = [
-                {"role": "user" if m.sender == "user" else "model", "parts": [m.text]}
-                for m in messages
+                {
+                    "role": "user",
+                    "parts": [
+                        "You are a document-based assistant. "
+                        "Use ONLY the information provided in the context. "
+                        "If the answer is not found in the context, reply strictly: "
+                        "'I don't know based on the provided document.'"
+                    ]
+                }
             ]
 
-            # Append retrieved document context as part of user prompt
+            # Add past messages (unchanged)
+            messages = db.query(Message).filter(
+                Message.thread_id == thread_id
+            ).order_by(Message.created_at).all()
+
+            for m in messages:
+                history.append({
+                    "role": "user" if m.sender == "user" else "model",
+                    "parts": [m.text]
+                })
+
+            # Append retrieved document context and question
             history.append({
                 "role": "user",
-                "parts": [f"Context:\n{retrieved_text}\n\nQuestion: {message}"]
+                "parts": [
+                    f"Context:\n{retrieved_text}\n\n"
+                    f"Question: {message}"
+                ]
             })
 
             # Initialize Gemini model
@@ -76,9 +98,9 @@ class ChatService:
                         delta = chunk.candidates[0].content.parts[0].text
                         if delta:
                             full_reply += delta
-                            yield delta  # stream chunk to frontend
+                            yield delta
 
-                # Save bot response after streaming finishes
+                # Save bot response
                 bot_msg = Message(
                     id=str(uuid.uuid4()),
                     thread_id=thread_id,
