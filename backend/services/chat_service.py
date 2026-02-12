@@ -1,3 +1,6 @@
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain_community.chat_models import ChatOllama
 import google.generativeai as genai
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -7,21 +10,18 @@ from database import SessionLocal
 from typing import List, Optional
 import uuid
 import os
-# Add these imports at the top of services/chat_service.py
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import FAISS
-
-
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 VECTOR_STORE_PATH = "vector_store/faiss_index"
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+
+embeddings = HuggingFaceEmbeddings(
+    model_name="sentence-transformers/all-MiniLM-L6-v2"
+)
+
 vector_store = FAISS.load_local(
     VECTOR_STORE_PATH,
     embeddings,
     allow_dangerous_deserialization=True
 )
-
 
 class ChatService:
     @staticmethod
@@ -47,58 +47,40 @@ class ChatService:
             db.add(user_msg)
             db.commit()
 
-            # Retrieve relevant chunks from FAISS vector store
+            # Retrieve relevant chunks
             relevant_docs = vector_store.similarity_search(message, k=3)
-            retrieved_text = "\n".join([doc.page_content for doc in relevant_docs])
+            retrieved_text = "\n".join(
+                [doc.page_content for doc in relevant_docs]
+            )
 
-            # ---------------------------
-            # STRICT RAG: No hallucination
-            # ---------------------------
-            history = [
-                {
-                    "role": "user",
-                    "parts": [
-                        "You are a document-based assistant. "
-                        "Use ONLY the information provided in the context. "
-                        "If the answer is not found in the context, reply strictly: "
-                        "'I don't know based on the provided document.'"
-                    ]
-                }
-            ]
+            # STRICT RAG PROMPT
+            prompt = f"""
+                        You are a document-based assistant.
+                        Use ONLY the information provided in the context.
+                        If the answer is not found in the context,
+                        reply strictly: "I don't know based on the provided document."
 
-            # Add past messages (unchanged)
-            messages = db.query(Message).filter(
-                Message.thread_id == thread_id
-            ).order_by(Message.created_at).all()
+                        Context:
+                        {retrieved_text}
 
-            for m in messages:
-                history.append({
-                    "role": "user" if m.sender == "user" else "model",
-                    "parts": [m.text]
-                })
+                        Question:
+                        {message}
+                        """
 
-            # Append retrieved document context and question
-            history.append({
-                "role": "user",
-                "parts": [
-                    f"Context:\n{retrieved_text}\n\n"
-                    f"Question: {message}"
-                ]
-            })
-
-            # Initialize Gemini model
-            model = genai.GenerativeModel("gemini-2.0-flash")
-            response = model.generate_content(history, stream=True)
+            # Initialize Ollama
+            llm = ChatOllama(
+                model="llama3",  # or mistral
+                temperature=0.2,
+                streaming=True
+            )
 
             async def event_stream():
                 full_reply = ""
 
-                for chunk in response:
-                    if chunk.candidates and chunk.candidates[0].content.parts:
-                        delta = chunk.candidates[0].content.parts[0].text
-                        if delta:
-                            full_reply += delta
-                            yield delta
+                for chunk in llm.stream(prompt):
+                    if chunk.content:
+                        full_reply += chunk.content
+                        yield chunk.content
 
                 # Save bot response
                 bot_msg = Message(
@@ -110,7 +92,10 @@ class ChatService:
                 db.add(bot_msg)
                 db.commit()
 
-            return StreamingResponse(event_stream(), media_type="text/event-stream")
+            return StreamingResponse(
+                event_stream(),
+                media_type="text/event-stream"
+            )
 
         finally:
             db.close()

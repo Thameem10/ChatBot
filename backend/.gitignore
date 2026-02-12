@@ -9,9 +9,6 @@ __pycache__/
 venv/
 env/
 
-# FAISS / vector stores
-vector_store/
-
 # Uploads / user files
 uploads/
 
