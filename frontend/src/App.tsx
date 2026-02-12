@@ -1,9 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
-import ContactForm from "./pages/ContactForm";
 import ChatPage from "./pages/ChatPage";
 import FilePage from "./pages/FilePage";
-
 import Layout from "./pages/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -24,9 +22,9 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="/" element={<ContactForm />} />
+            <Route path="/" element={<FilePage />} />
             <Route path="/chatbox" element={<ChatPage />} />
-            <Route path="/File" element={<FilePage />} />
+            {/* <Route path="/" element={<ContactForm />} /> */}
           </Route>
         </Routes>
       </Router>

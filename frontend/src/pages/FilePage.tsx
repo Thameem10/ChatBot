@@ -49,11 +49,11 @@ export default function FilePage() {
         body: formData
       });
       const data: UploadedFileResponse = await response.json();
-      setMessage(`File "${data.filename}" uploaded successfully ✅`);
+      setMessage(`File "${data.filename}" uploaded successfully`);
       setSelectedFile(null); // reset selection after upload
     } catch (error) {
       console.error(error);
-      setMessage("Upload failed ❌");
+      setMessage("Upload failed");
     } finally {
       setUploading(false);
     }
@@ -71,16 +71,13 @@ export default function FilePage() {
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-purple-400 rounded-xl p-12 text-center cursor-pointer hover:border-purple-600 transition"
+          className="border-2 border-dashed border-orange-500 rounded-xl p-12 text-center cursor-pointer hover:border-orange-400 transition"
         >
-          <p className="text-purple-600 font-semibold mb-2">
-            {selectedFile ? "File Selected ✅" : "Drag & drop your file here"}
-          </p>
           <p className="text-gray-500">
-            Or click to select a file (PDF, TXT, DOCX)
+            click to upload your file (PDF, TXT, DOCX)
           </p>
           {selectedFile && (
-            <p className="mt-3 text-gray-700 font-medium">
+            <p className="text-3xl mt-3 text-gray-700 font-medium">
               {selectedFile.name}
             </p>
           )}
@@ -99,7 +96,7 @@ export default function FilePage() {
         <button
           onClick={uploadFile}
           disabled={uploading}
-          className="mt-6 w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-blue-700 transition disabled:opacity-50"
+          className="mt-6 w-full py-3 bg-gradient-to-r from-orange-500 to-blue-600 text-white font-semibold rounded-xl hover:from-orange-700 hover:to-blue-700 transition disabled:opacity-50"
         >
           {uploading ? "Uploading..." : "Upload File"}
         </button>

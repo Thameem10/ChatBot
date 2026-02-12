@@ -49,7 +49,7 @@ export default function Layout() {
       >
         <div className="h-full flex flex-col">
           <div className="p-6 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-amber-900">Chat Bot</h1>
+            <h1 className="text-3xl font-bold text-amber-900">Chat Bot</h1>
             <p className="text-sm text-gray-600 mt-1">Chat Management System</p>
           </div>
 

@@ -106,7 +106,6 @@ export default function LoginPage() {
                     : "border-gray-300 focus:ring-amber-600"
                 }
               `}
-              placeholder="admin@juzqr.com"
             />
 
             {emailError && (
@@ -138,7 +137,6 @@ export default function LoginPage() {
                     : "border-gray-300 focus:ring-amber-600"
                 }
               `}
-              placeholder="••••••••"
             />
 
             {passwordError && (
