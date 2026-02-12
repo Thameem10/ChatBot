@@ -24,8 +24,16 @@ export default function ChatPage() {
 
   // Save new threadId if newly created
   useEffect(() => {
-    localStorage.setItem("thread_id", threadId);
-  }, [threadId]);
+    const savedMessages = localStorage.getItem("chat_messages");
+
+    if (savedMessages) {
+      setMessages(JSON.parse(savedMessages));
+    } else {
+      setMessages([{ sender: "bot", text: "Hi! How can I help you today?" }]);
+    }
+
+    loadThreads();
+  }, []);
 
   // Load chat history
   const loadHistory = async (id: string) => {
@@ -33,21 +41,17 @@ export default function ChatPage() {
       const res = await fetch(
         `${API_URL}/chat/history/${id}?limit=50&offset=0`
       );
+
       if (!res.ok) throw new Error("Backend error");
 
       const data = await res.json();
+
       setMessages(data);
-      setThreadId(id);
       localStorage.setItem("chat_messages", JSON.stringify(data));
-      localStorage.setItem("thread_id", id);
     } catch (err) {
       console.warn("Using local fallback");
       const local = localStorage.getItem("chat_messages");
-      setMessages(
-        local
-          ? JSON.parse(local)
-          : [{ sender: "bot", text: "Hi! How can I help you today?" }]
-      );
+      if (local) setMessages(JSON.parse(local));
     }
   };
 
@@ -64,9 +68,15 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
-    loadThreads();
+    if (!threadId) return;
+
+    localStorage.setItem("thread_id", threadId);
     loadHistory(threadId);
-  }, []);
+  }, [threadId]);
+
+  useEffect(() => {
+    localStorage.setItem("chat_messages", JSON.stringify(messages));
+  }, [messages]);
 
   // Auto scroll
   useEffect(() => {
@@ -160,7 +170,7 @@ export default function ChatPage() {
                 ? "bg-amber-300 font-bold"
                 : "hover:bg-gray-200"
             }`}
-            onClick={() => thread.id && loadHistory(thread.id)}
+            onClick={() => thread.id && setThreadId(thread.id)}
           >
             {limitWords(thread.title, 5) ?? thread.id?.slice(0, 6) ?? "Unknown"}
             ...

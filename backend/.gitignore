@@ -17,3 +17,5 @@ services/__pycache__/
 controllers/__pycache__/
 routes/__pycache__/
 node_modules
+
+vector_store/

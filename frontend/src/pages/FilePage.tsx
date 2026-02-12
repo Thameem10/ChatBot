@@ -1,9 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
-
-interface UploadResponse {
-  message: string;
-  file_id: string;
-}
+import { useState, useRef, useEffect } from "react";
+import { TimerIcon, XIcon, CheckIcon } from "lucide-react";
 
 interface VectorStatus {
   status: "idle" | "processing" | "ready" | "cancelled";
@@ -116,7 +112,7 @@ export default function FilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex flex-col items-center p-10">
-      <h1 className="text-4xl font-extrabold mb-8 text-gray-800">
+      <h1 className="text-4xl font-extrabold mb-8 text-amber-800">
         Upload Documents for Chatbot
       </h1>
 
@@ -125,7 +121,7 @@ export default function FilePage() {
         <div
           onClick={() => !isDisabled && fileInputRef.current?.click()}
           className={`border-2 border-dashed rounded-xl p-12 text-center transition 
-            ${isDisabled ? "border-gray-300 cursor-not-allowed" : "border-orange-500 cursor-pointer hover:border-orange-400"}`}
+            ${isDisabled ? "border-gray-300 cursor-not-allowed" : "border-amber-600 cursor-pointer hover:border-orange-400"}`}
         >
           <p className="text-gray-500">
             {status === "ready"
@@ -152,7 +148,7 @@ export default function FilePage() {
         <button
           onClick={uploadFile}
           disabled={isDisabled}
-          className="mt-6 w-full py-3 bg-gradient-to-r from-orange-500 to-blue-600 text-white font-semibold rounded-xl disabled:opacity-50"
+          className="mt-6 w-full py-3 bg-amber-300 text-black font-semibold rounded-xl disabled:opacity-50"
         >
           {uploading
             ? "Uploading..."
@@ -176,7 +172,7 @@ export default function FilePage() {
           <div className="mt-6">
             <div className="w-full bg-gray-200 rounded-full h-4">
               <div
-                className="bg-gradient-to-r from-orange-500 to-blue-600 h-4 rounded-full transition-all duration-500"
+                className="bg-gradient-to-r from-amber-300 to-amber-600 h-4 rounded-full transition-all duration-500"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -188,23 +184,30 @@ export default function FilePage() {
 
         {/* Ready */}
         {status === "ready" && (
-          <div className="mt-6 text-center">
-            <p className="text-green-600 font-bold text-lg">
-              ✅ Ready to ask questions!
-            </p>
-            {timeTaken !== null && (
-              <p className="text-gray-600 mt-1">
-                ⏱ Built in {timeTaken} seconds
+          <div className="mt-8 text-center">
+            <div className="flex flex-row gap-5 ">
+              <CheckIcon className="ml-24 text-green-500 h-6 w-5 mt-1" />
+              <p className="text-green-600 font-bold text-lg w-fit">
+                Ready to ask questions!
               </p>
+            </div>
+            {timeTaken !== null && (
+              <div className="flex flex-row gap-5 mt-5">
+                <TimerIcon className="ml-24 h-6 w-5 mt-1" />
+                <p className="text-gray-600 mt-1 w-fit">
+                  Built in {timeTaken} seconds
+                </p>
+              </div>
             )}
           </div>
         )}
 
         {/* Cancelled */}
         {status === "cancelled" && (
-          <p className="mt-6 text-center text-red-500 font-semibold">
-            ❌ Process cancelled
-          </p>
+          <div className="flex flex-row gap-5 mt-5">
+            <XIcon className="ml-24 h-6 w-5 mt-1" />
+            <p className="text-gray-600 mt-1 w-fit">Process cancelled</p>
+          </div>
         )}
       </div>
     </div>
