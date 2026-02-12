@@ -5,6 +5,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from PyPDF2 import PdfReader
 import docx
+import threading
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 VECTOR_STORE_PATH = BASE_DIR / "vector_store"
@@ -27,6 +28,7 @@ class VectorService:
     status = "idle"
     time_taken = 0
     cancelled = False
+    cancel_event = threading.Event()
 
     @staticmethod
     def read_file(file_path: Path):
@@ -56,7 +58,7 @@ class VectorService:
         cls.status = "processing"
         cls.progress = 0
         cls.time_taken = 0
-        cls.cancelled = False
+        cls.cancel_event.clear()
 
         file_path = Path(file_path)
 
@@ -86,16 +88,16 @@ class VectorService:
         else:
             vector_store = None
 
-        batch_size = 32
+        batch_size = 8
 
         for i in range(0, total, batch_size):
 
             # 🔴 Cancel check
-            if cls.cancelled:
+            if cls.cancel_event.is_set():
                 cls.status = "cancelled"
                 cls.progress = 0
-                cls.cancelled = False
                 return
+
 
             batch = chunks[i:i + batch_size]
 
@@ -116,4 +118,5 @@ class VectorService:
 
     @classmethod
     def cancel(cls):
-        cls.cancelled = True
+        print("Cancel called!")
+        cls.cancel_event.set()

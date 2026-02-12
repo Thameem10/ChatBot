@@ -1,6 +1,7 @@
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_community.chat_models import ChatOllama
+from pathlib import Path
 import google.generativeai as genai
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -11,17 +12,28 @@ from typing import List, Optional
 import uuid
 import os
 
-VECTOR_STORE_PATH = "vector_store/faiss_index"
-
+# Embedding model
 embeddings = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
 
-vector_store = FAISS.load_local(
-    VECTOR_STORE_PATH,
-    embeddings,
-    allow_dangerous_deserialization=True
-)
+# Vector store path
+VECTOR_STORE_PATH = Path("vector_store/faiss_index")
+
+
+def get_vector_store():
+    index_path = VECTOR_STORE_PATH / "index.faiss"
+
+    # Check if index file exists
+    if not index_path.exists():
+        return None
+
+    return FAISS.load_local(
+        str(VECTOR_STORE_PATH),
+        embeddings,
+        allow_dangerous_deserialization=True
+    )
+
 
 class ChatService:
     @staticmethod
@@ -48,7 +60,12 @@ class ChatService:
             db.commit()
 
             # Retrieve relevant chunks
+            
+            vector_store = get_vector_store()
+            if not vector_store:
+                return "Knowledge base not built yet. Please upload a document first."
             relevant_docs = vector_store.similarity_search(message, k=3)
+
             retrieved_text = "\n".join(
                 [doc.page_content for doc in relevant_docs]
             )

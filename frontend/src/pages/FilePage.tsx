@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { TimerIcon, XIcon, CheckIcon } from "lucide-react";
+import { TimerIcon, CheckIcon, CircleX } from "lucide-react";
 
 interface VectorStatus {
   status: "idle" | "processing" | "ready" | "cancelled";
@@ -185,14 +185,14 @@ export default function FilePage() {
         {/* Ready */}
         {status === "ready" && (
           <div className="mt-8 text-center">
-            <div className="flex flex-row gap-5 ">
-              <CheckIcon className="ml-24 text-green-500 h-6 w-5 mt-1" />
+            <div className="flex flex-row gap-3 ">
+              <CheckIcon className="ml-24 text-green-500 h-6 w-6 mt-1" />
               <p className="text-green-600 font-bold text-lg w-fit">
                 Ready to ask questions!
               </p>
             </div>
             {timeTaken !== null && (
-              <div className="flex flex-row gap-5 mt-5">
+              <div className="flex flex-row gap-4 mt-5">
                 <TimerIcon className="ml-24 h-6 w-5 mt-1" />
                 <p className="text-gray-600 mt-1 w-fit">
                   Built in {timeTaken} seconds
@@ -204,9 +204,11 @@ export default function FilePage() {
 
         {/* Cancelled */}
         {status === "cancelled" && (
-          <div className="flex flex-row gap-5 mt-5">
-            <XIcon className="ml-24 h-6 w-5 mt-1" />
-            <p className="text-gray-600 mt-1 w-fit">Process cancelled</p>
+          <div className="flex flex-row gap-4 mt-9">
+            <CircleX className="ml-32 h-5 w-5 mt-2 text-xl text-red-500 font-bold" />
+            <p className="text-xl mt-1 w-fit text-red-500 font-bold">
+              Process cancelled
+            </p>
           </div>
         )}
       </div>

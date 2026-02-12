@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, BackgroundTasks
 from controllers.file_controller import FileController
-
+from services.vector_service import VectorService
 router = APIRouter(prefix="/file", tags=["File"])
 
 
