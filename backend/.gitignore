@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+
+# Virtual environment
+venv/
+env/
+
+# FAISS / vector stores
+vector_store/
+
+# Uploads / user files
+uploads/
+
+# Backend __pycache__ folders
+services/__pycache__/
+controllers/__pycache__/
+routes/__pycache__/
+node_modules
