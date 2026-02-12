@@ -14,6 +14,7 @@ export default function FilePage() {
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState<VectorStatus["status"]>("idle");
   const [timeTaken, setTimeTaken] = useState<number | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const API_URL = import.meta.env.VITE_API_URL;
@@ -100,18 +101,30 @@ export default function FilePage() {
   };
 
   const cancelProcess = async () => {
-    await fetch(`${API_URL}/file/vector-cancel`, {
-      method: "POST"
-    });
+    setIsCancelling(true); // 👈 instantly update UI
 
-    setStatus("cancelled");
-    setProgress(0);
+    try {
+      const response = await fetch(`${API_URL}/file/vector-cancel`, {
+        method: "POST"
+      });
+
+      if (response.ok) {
+        setStatus("cancelled");
+        setProgress(0);
+      }
+    } catch (error) {
+      console.error("Cancel failed", error);
+    } finally {
+      setIsCancelling(false);
+    }
   };
 
-  const isDisabled = uploading || status === "processing" || status === "ready";
+  const isDisabled = uploading || status === "processing";
+
+  console.log(message);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex flex-col items-center p-10">
+    <div className="flex flex-col items-center p-10">
       <h1 className="text-4xl font-extrabold mb-8 text-amber-800">
         Upload Documents for Chatbot
       </h1>
@@ -123,11 +136,7 @@ export default function FilePage() {
           className={`border-2 border-dashed rounded-xl p-12 text-center transition 
             ${isDisabled ? "border-gray-300 cursor-not-allowed" : "border-amber-600 cursor-pointer hover:border-orange-400"}`}
         >
-          <p className="text-gray-500">
-            {status === "ready"
-              ? "Knowledge base already built"
-              : "Click to upload your file"}
-          </p>
+          <p className="text-gray-500">Click to upload your file</p>
 
           {selectedFile && (
             <p className="text-xl mt-3 text-gray-700 font-medium">
@@ -161,9 +170,15 @@ export default function FilePage() {
         {status === "processing" && (
           <button
             onClick={cancelProcess}
-            className="mt-4 w-full py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition"
+            disabled={isCancelling}
+            className={`mt-4 w-full py-2 text-white rounded-xl transition
+            ${
+              isCancelling
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-red-500 hover:bg-red-600"
+            }`}
           >
-            Cancel Process
+            {isCancelling ? "Cancelling..." : "Cancel Process"}
           </button>
         )}
 

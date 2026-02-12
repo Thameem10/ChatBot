@@ -29,6 +29,8 @@ class VectorService:
     time_taken = 0
     cancelled = False
     cancel_event = threading.Event()
+    was_cancelled = False
+
 
     @staticmethod
     def read_file(file_path: Path):
@@ -59,6 +61,7 @@ class VectorService:
         cls.progress = 0
         cls.time_taken = 0
         cls.cancel_event.clear()
+        cls.was_cancelled = False
 
         file_path = Path(file_path)
 
@@ -79,6 +82,7 @@ class VectorService:
             cls.status = "error"
             return
 
+        # Load existing index if available
         if (FAISS_INDEX_PATH / "index.faiss").exists():
             vector_store = FAISS.load_local(
                 str(FAISS_INDEX_PATH),
@@ -92,15 +96,16 @@ class VectorService:
 
         for i in range(0, total, batch_size):
 
-            # 🔴 Cancel check
+            # 🔴 Cancel check BEFORE heavy operation
             if cls.cancel_event.is_set():
                 cls.status = "cancelled"
                 cls.progress = 0
+                cls.was_cancelled = True
                 return
-
 
             batch = chunks[i:i + batch_size]
 
+            # Heavy operation
             if vector_store is None:
                 vector_store = FAISS.from_texts(batch, embeddings_model)
             else:
@@ -109,12 +114,21 @@ class VectorService:
             processed = min(i + batch_size, total)
             cls.progress = int((processed / total) * 100)
 
-        if vector_store:
+        # If cancelled after loop (rare but safe)
+        if cls.cancel_event.is_set():
+            cls.status = "cancelled"
+            cls.progress = 0
+            cls.was_cancelled = True
+            return
+
+        # Save only if not cancelled
+        if vector_store and not cls.was_cancelled:
             vector_store.save_local(str(FAISS_INDEX_PATH))
 
         cls.time_taken = round(time.time() - start_time, 2)
         cls.status = "ready"
         cls.progress = 100
+
 
     @classmethod
     def cancel(cls):
